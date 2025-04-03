@@ -42,7 +42,6 @@ jobs:
           rsync -avuz \
             --partial \
             --compress \
-            --quiet \
             --stats \
             --checksum \
             -e "ssh -o StrictHostKeyChecking=no" \
