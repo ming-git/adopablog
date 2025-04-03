@@ -24,14 +24,21 @@ jobs:
           ssh-keyscan ${{ secrets.TCLH_SERVER_IP }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+          - name: Prepare Target Directory
+          run: |
+            ssh -o StrictHostKeyChecking=no \
+                ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+                "
+                # 确保目录存在
+                sudo mkdir -p /opt/docker/nginx/html
+                
+                # 临时授予部署用户写权限
+                sudo chown -R ${{ secrets.TCLH_SERVER_USER }}:${{ secrets.TCLH_SERVER_USER }} /opt/docker/nginx/html
+                sudo chmod -R 775 /opt/docker/nginx/html
+                "
+      
       - name: Sync www directory to Server with Incremental Update
         run: |
-          # 使用 rsync 的增量同步特性
-          # --partial: 断点续传
-          # --compress: 传输时压缩
-          # --progress: 显示进度
-          # -u: 只同步新文件或更新的文件
-          # --delete-after: 在传输完成后删除目标目录中多余的文件
           rsync -avuz \
             --partial \
             --compress \
@@ -41,23 +48,22 @@ jobs:
             --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
             www/ \
             ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:/opt/docker/nginx/html/
-
-      - name: Verify and Set Ownership
+      
+      - name: Restore Ownership and Permissions
         run: |
-          # 使用 sudo 确保正确设置权限
           ssh -o StrictHostKeyChecking=no \
               ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
               "
-              # 递归设置目录权限
+              # 恢复root所有权
               sudo chown -R root:root /opt/docker/nginx/html
-              sudo chmod -R 755 /opt/docker/nginx/html
               
-              # 显示目录内容和权限
-              ls -la /opt/docker/nginx/html
+              # 设置安全权限
+              sudo find /opt/docker/nginx/html -type d -exec chmod 755 {} \;
+              sudo find /opt/docker/nginx/html -type f -exec chmod 644 {} \;
               
-              # 检查文件数量
-              echo '文件数量:'
-              find /opt/docker/nginx/html -type f | wc -l
+              # 验证权限
+              ls -ld /opt/docker/nginx/html
+              ls --la /opt/docker/nginx/html | head
               "
 
       - name: Reload Nginx Docker Container
