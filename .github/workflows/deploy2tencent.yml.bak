@@ -23,34 +23,36 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan ${{ secrets.TCLH_SERVER_IP }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
-
-      - name: Sync www directory to Server with Incremental Update
+      - name: Prepare Server Directory
         run: |
-          # 使用 rsync 的增量同步特性
-          # --partial: 断点续传
-          # --compress: 传输时压缩
-          # --progress: 显示进度
-          # -u: 只同步新文件或更新的文件
-          # --delete-after: 在传输完成后删除目标目录中多余的文件
-          rsync -avuz \
-            --partial \
-            --compress \
-            --progress \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            --delete-after \
-            --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
-            www/ \
-            ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:/opt/docker/nginx/html/
-
-      - name: Verify and Set Ownership
-        run: |
-          # 使用 sudo 确保正确设置权限
           ssh -o StrictHostKeyChecking=no \
               ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
               "
-              # 递归设置目录权限
-              sudo chown -R www-data:www-data /opt/docker/nginx/html
+              # 确保目录存在并设置正确权限
+              sudo mkdir -p /opt/docker/nginx/html
+              sudo chown -R ${{ secrets.TCLH_SERVER_USER }}:${{ secrets.TCLH_SERVER_USER }} /opt/docker/nginx/html
               sudo chmod -R 755 /opt/docker/nginx/html
+              
+              # 清理可能存在的旧文件
+              # rm -rf /opt/docker/nginx/html/*
+              "
+      - name: Sync www directory to Server
+        run: |
+          # 使用 rsync 同步，避免权限问题
+          rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            --no-perms \
+            --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
+            www/ \
+            ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:/opt/docker/nginx/html/
+      - name: Verify Deployment and Set Ownership
+        run: |
+          # 最终设置正确的文件所有者
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+              "
+              # 设置为当前用户
+              sudo chown -R ${{ secrets.TCLH_SERVER_USER }}:${{ secrets.TCLH_SERVER_USER }} /opt/docker/nginx/html
               
               # 显示目录内容和权限
               ls -la /opt/docker/nginx/html
@@ -59,13 +61,12 @@ jobs:
               echo '文件数量:'
               find /opt/docker/nginx/html -type f | wc -l
               "
-
       - name: Reload Nginx Docker Container
         run: |
           ssh -o StrictHostKeyChecking=no \
               ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
               "
               cd /opt/docker/nginx
-              docker compose down
+              docker compose down -v
               docker compose up -d
               "
