@@ -43,7 +43,7 @@ jobs:
             --partial \
             --compress \
             --progress \
-            --stats \
+            # --stats \
             --checksum \  
             -e "ssh -o StrictHostKeyChecking=no" \
             --delete-after \
