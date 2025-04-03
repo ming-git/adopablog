@@ -75,4 +75,9 @@ jobs:
               docker compose down
               docker compose up -d
               "
-# test mark
+      - name: Stop SSH Agent (explicit)
+        if: always()
+        run: |
+          if [ -n "$SSH_AGENT_PID" ]; then
+            ssh-agent -k
+          fi
