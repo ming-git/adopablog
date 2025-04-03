@@ -35,7 +35,7 @@ jobs:
               sudo chmod -R 755 /opt/docker/nginx/html
               
               # 清理可能存在的旧文件
-              rm -rf /opt/docker/nginx/html/*
+              # rm -rf /opt/docker/nginx/html/*
               "
 
       - name: Sync www directory to Server
