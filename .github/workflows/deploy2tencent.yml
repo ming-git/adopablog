@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.TCLH_SSH_KEY }}
 
@@ -44,7 +44,7 @@ jobs:
             --compress \
             --progress \
             --stats \
-            --checksum \
+            --checksum \   # 基于内容检查
             -e "ssh -o StrictHostKeyChecking=no" \
             --delete-after \
             --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
@@ -65,20 +65,27 @@ jobs:
               
               # 验证权限
               ls -ld /opt/docker/nginx/html
-              ls --la /opt/docker/nginx/html | head
+              ls -al /opt/docker/nginx/html | head
               "
+
+      # - name: Verify Sync Integrity
+      #   run: |
+      #     # 本地生成文件列表和校验和
+      #     find www -type f -exec md5sum {} + > local_files.md5
+          
+      #     # 远程生成校验和并对比
+      #     ssh -o StrictHostKeyChecking=no \
+      #         ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+      #         "find /opt/docker/nginx/html -type f -exec md5sum {} +" > remote_files.md5
+              
+      #     diff -u local_files.md5 remote_files.md5 || echo "差异检测到！"
 
       - name: Verify Sync Integrity
         run: |
-          # 本地生成文件列表和校验和
-          find www -type f -exec md5sum {} + > local_files.md5
-          
-          # 远程生成校验和并对比
-          ssh -o StrictHostKeyChecking=no \
-              ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
-              "find /opt/docker/nginx/html -type f -exec md5sum {} +" > remote_files.md5
-              
-          diff -u local_files.md5 remote_files.md5 || echo "差异检测到！"
+          find www -type f -exec md5sum {} + | sort > local_files.md5
+          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+            "find /opt/docker/nginx/html -type f -exec md5sum {} + | sort" > remote_files.md5
+          diff -y --suppress-common-lines local_files.md5 remote_files.md5
 
       - name: Reload Nginx Docker Container
         run: |
