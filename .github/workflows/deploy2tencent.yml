@@ -24,27 +24,53 @@ jobs:
           ssh-keyscan ${{ secrets.TCLH_SERVER_IP }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Verify SSH Connection
+      - name: Prepare Server Directory
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
-            "echo 'SSH connection successful'"
-
-      - name: Check Target Directory Permissions
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
-            "mkdir -p ${{ secrets.TCLH_SERVER_PATH }} && \
-             touch ${{ secrets.TCLH_SERVER_PATH }}/permission_test && \
-             rm ${{ secrets.TCLH_SERVER_PATH }}/permission_test && \
-             echo 'Directory has write permissions'"
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+              "
+              # 确保目录存在并设置正确权限
+              sudo mkdir -p /opt/docker/nginx/html
+              sudo chown -R ${{ secrets.TCLH_SERVER_USER }}:${{ secrets.TCLH_SERVER_USER }} /opt/docker/nginx/html
+              sudo chmod -R 755 /opt/docker/nginx/html
+              
+              # 清理可能存在的旧文件
+              rm -rf /opt/docker/nginx/html/*
+              "
 
       - name: Sync www directory to Server
         run: |
-          rsync -avz --progress --delete --no-perms --no-owner \
+          # 使用 rsync 同步，避免权限问题
+          rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
+            --no-perms \
+            --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
             www/ \
-            ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:${{ secrets.TCLH_SERVER_PATH }}
+            ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:/opt/docker/nginx/html/
 
-      - name: Verify Deployment
+      - name: Verify Deployment and Set Ownership
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
-            "ls -la ${{ secrets.TCLH_SERVER_PATH }} | head -n 10"
+          # 最终设置正确的文件所有者
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+              "
+              # 设置为当前用户
+              sudo chown -R ${{ secrets.TCLH_SERVER_USER }}:${{ secrets.TCLH_SERVER_USER }} /opt/docker/nginx/html
+              
+              # 显示目录内容和权限
+              ls -la /opt/docker/nginx/html
+              
+              # 检查文件数量
+              echo '文件数量:'
+              find /opt/docker/nginx/html -type f | wc -l
+              "
+
+      - name: Reload Nginx Docker Container
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+              "
+              cd /opt/docker/nginx
+              docker compose down -v
+              docker compose up -d
+              "
