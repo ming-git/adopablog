@@ -29,23 +29,20 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
             "echo 'SSH connection successful'"
 
-      - name: Verify Sudo Privileges
+      - name: Check Target Directory Permissions
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
-            "sudo -v || (echo 'Error: User does not have sudo privileges'; exit 1)"
-
-      - name: Create Target Directory (if not exists)
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
-            "sudo mkdir -p ${{ secrets.TCLH_SERVER_PATH }} && sudo chown -R ${{ secrets.TCLH_SERVER_USER }} ${{ secrets.TCLH_SERVER_PATH }}"
+            "mkdir -p ${{ secrets.TCLH_SERVER_PATH }} && \
+             touch ${{ secrets.TCLH_SERVER_PATH }}/permission_test && \
+             rm ${{ secrets.TCLH_SERVER_PATH }}/permission_test && \
+             echo 'Directory has write permissions'"
 
       - name: Sync www directory to Server
         run: |
-          rsync -avz --progress --delete \
+          rsync -avz --progress --delete --no-perms --no-owner \
             -e "ssh -o StrictHostKeyChecking=no" \
             www/ \
-            ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:${{ secrets.TCLH_SERVER_PATH }} \
-            --rsync-path="sudo rsync"
+            ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:${{ secrets.TCLH_SERVER_PATH }}
 
       - name: Verify Deployment
         run: |

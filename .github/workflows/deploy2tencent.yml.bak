@@ -28,18 +28,6 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} "echo 'SSH connection successful'"
 
-      # 在Action中可以添加
-      - name: Diagnose Deployment
-        run: |
-          # 打印环境变量（注意不要泄露敏感信息）
-          echo "Server IP: ${{ secrets.TCLH_SERVER_IP }}"
-          echo "Server Path: ${{ secrets.TCLH_SERVER_PATH }}"
-          
-          # 检查本地文件
-          pwd
-          ls -la
-          ls -la www/
-
       - name: Sync www directory to Server B
         run: |
           # 显式检查本地www目录
