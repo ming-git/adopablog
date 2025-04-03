@@ -4,9 +4,9 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '**'           # 监控所有文件
-      - '!.*'          # 忽略以 . 开头的文件和目录
-      - '!**/.*/**'    # 忽略以 . 开头的子目录
+      - '**'           # Monitor all files
+      - '!.*'          # Ignore files and directories starting with .
+      - '!**/.*/**'    # Ignore subdirectories starting with .
 
 jobs:
   sync:
@@ -15,7 +15,7 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # 提取完整历史
+        fetch-depth: 0 # Fetch complete history
 
     - name: Configure SSH
       env:
@@ -25,12 +25,30 @@ jobs:
         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
         ssh-keyscan gitcode.com >> ~/.ssh/known_hosts
+
+    - name: Reduce Large File Size
+      run: |
+        # Check and reduce large files
+        find . -type f -size +10M | while read file; do
+          echo "Large file detected: $file"
+          # Option 1: Compress the file
+          gzip "$file"
+          # Option 2: If it's an HTML file, you might want to minimize it
+          # npx html-minifier --collapse-whitespace --remove-comments "$file" -o "$file.min"
+          # mv "$file.min" "$file"
+        done
+
     - name: Prepare Code for Sync
       run: |
-        # 删除 .github 目录
+        # Remove GitHub-specific directories
         rm -rf .github
         rm -rf .gitignore
+
     - name: Push to GitCode
       run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git add .
+        git commit -m "Reduce file sizes for GitCode sync"
         git remote add gitcode git@gitcode.com:adopa/adopablog.git
         git push --force gitcode main
