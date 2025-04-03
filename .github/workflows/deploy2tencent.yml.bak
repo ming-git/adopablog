@@ -40,7 +40,6 @@ jobs:
           ls -la
           ls -la www/
 
-
       - name: Sync www directory to Server B
         run: |
           # 显式检查本地www目录
