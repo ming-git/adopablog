@@ -24,18 +24,18 @@ jobs:
           ssh-keyscan ${{ secrets.TCLH_SERVER_IP }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-          - name: Prepare Target Directory
-          run: |
-            ssh -o StrictHostKeyChecking=no \
-                ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
-                "
-                # 确保目录存在
-                sudo mkdir -p /opt/docker/nginx/html
-                
-                # 临时授予部署用户写权限
-                sudo chown -R ${{ secrets.TCLH_SERVER_USER }}:${{ secrets.TCLH_SERVER_USER }} /opt/docker/nginx/html
-                sudo chmod -R 775 /opt/docker/nginx/html
-                "
+      - name: Prepare Target Directory
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+              "
+              # 确保目录存在
+              sudo mkdir -p /opt/docker/nginx/html
+              
+              # 临时授予部署用户写权限
+              sudo chown -R ${{ secrets.TCLH_SERVER_USER }}:${{ secrets.TCLH_SERVER_USER }} /opt/docker/nginx/html
+              sudo chmod -R 775 /opt/docker/nginx/html
+              "
       
       - name: Sync www directory to Server with Incremental Update
         run: |
