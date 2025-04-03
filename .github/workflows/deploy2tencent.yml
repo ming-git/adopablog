@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4  # 升级到最新版本
+        uses: actions/checkout@v4
 
       - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0  # 使用最新版本
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.TCLH_SSH_KEY }}
 
@@ -26,27 +26,28 @@ jobs:
 
       - name: Verify SSH Connection
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} "echo 'SSH connection successful'"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+            "echo 'SSH connection successful'"
 
-      # 在Action中可以添加
-      - name: Diagnose Deployment
+      - name: Verify Sudo Privileges
         run: |
-          # 打印环境变量（注意不要泄露敏感信息）
-          echo "Server IP: ${{ secrets.TCLH_SERVER_IP }}"
-          echo "Server Path: ${{ secrets.TCLH_SERVER_PATH }}"
-          
-          # 检查本地文件
-          pwd
-          ls -la
-          ls -la www/
+          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+            "sudo -v || (echo 'Error: User does not have sudo privileges'; exit 1)"
 
-
-      - name: Sync www directory to Server B
+      - name: Create Target Directory (if not exists)
         run: |
-          # 显式检查本地www目录
-          ls -la www/
-          
+          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+            "sudo mkdir -p ${{ secrets.TCLH_SERVER_PATH }} && sudo chown -R ${{ secrets.TCLH_SERVER_USER }} ${{ secrets.TCLH_SERVER_PATH }}"
+
+      - name: Sync www directory to Server
+        run: |
           rsync -avz --progress --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
             www/ \
-            ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:${{ secrets.TCLH_SERVER_PATH }}
+            ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:${{ secrets.TCLH_SERVER_PATH }} \
+            --rsync-path="sudo rsync"
+
+      - name: Verify Deployment
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
+            "ls -la ${{ secrets.TCLH_SERVER_PATH }} | head -n 10"
