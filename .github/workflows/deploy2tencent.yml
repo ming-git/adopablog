@@ -43,7 +43,7 @@ jobs:
             --partial \
             --compress \
             --progress \
-            # --stats \
+            --stats \
             --checksum \  
             -e "ssh -o StrictHostKeyChecking=no" \
             --delete-after \
@@ -96,6 +96,7 @@ jobs:
               docker compose down
               docker compose up -d
               "
+
       - name: Stop SSH Agent (explicit)
         if: always()
         run: |
