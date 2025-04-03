@@ -49,7 +49,7 @@ jobs:
               ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }} \
               "
               # 递归设置目录权限
-              sudo chown -R www-data:www-data /opt/docker/nginx/html
+              sudo chown -R root:root /opt/docker/nginx/html
               sudo chmod -R 755 /opt/docker/nginx/html
               
               # 显示目录内容和权限
