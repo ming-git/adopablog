@@ -23,7 +23,6 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan ${{ secrets.TCLH_SERVER_IP }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
-
       - name: Prepare Server Directory
         run: |
           ssh -o StrictHostKeyChecking=no \
@@ -37,7 +36,6 @@ jobs:
               # 清理可能存在的旧文件
               # rm -rf /opt/docker/nginx/html/*
               "
-
       - name: Sync www directory to Server
         run: |
           # 使用 rsync 同步，避免权限问题
@@ -47,7 +45,6 @@ jobs:
             --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
             www/ \
             ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:/opt/docker/nginx/html/
-
       - name: Verify Deployment and Set Ownership
         run: |
           # 最终设置正确的文件所有者
@@ -64,7 +61,6 @@ jobs:
               echo '文件数量:'
               find /opt/docker/nginx/html -type f | wc -l
               "
-
       - name: Reload Nginx Docker Container
         run: |
           ssh -o StrictHostKeyChecking=no \
@@ -74,4 +70,3 @@ jobs:
               docker compose down -v
               docker compose up -d
               "
-#  test only
