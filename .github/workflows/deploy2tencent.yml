@@ -42,11 +42,13 @@ jobs:
           rsync -avuz \
             --partial \
             --compress \
+            --quiet \
             --stats \
             --checksum \
             -e "ssh -o StrictHostKeyChecking=no" \
             --delete-after \
             --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
+            --info=NAME2 \
             www/ \
             ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:/opt/docker/nginx/html/
       
