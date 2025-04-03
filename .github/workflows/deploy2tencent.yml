@@ -40,13 +40,15 @@ jobs:
 
       - name: Sync www directory to Server
         run: |
-          # 使用 rsync 同步，避免权限问题
           rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
             --no-perms \
             --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
+            --stats \  # 添加统计信息
+            --info=progress2 \  # 显示详细进度
             www/ \
             ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:/opt/docker/nginx/html/
+            
 
       - name: Verify Deployment and Set Ownership
         run: |
