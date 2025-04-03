@@ -74,3 +74,4 @@ jobs:
               docker compose down -v
               docker compose up -d
               "
+#  test only
