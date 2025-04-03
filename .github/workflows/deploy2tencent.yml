@@ -44,7 +44,7 @@ jobs:
             --compress \
             --progress \
             --stats \
-            --checksum \   # 基于内容检查
+            --checksum \  
             -e "ssh -o StrictHostKeyChecking=no" \
             --delete-after \
             --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
