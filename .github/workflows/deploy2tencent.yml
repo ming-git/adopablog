@@ -47,7 +47,6 @@ jobs:
             --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r \
             www/ \
             ${{ secrets.TCLH_SERVER_USER }}@${{ secrets.TCLH_SERVER_IP }}:/opt/docker/nginx/html/
-            
 
       - name: Verify Deployment and Set Ownership
         run: |
